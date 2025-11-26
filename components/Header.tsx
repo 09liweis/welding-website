@@ -2,9 +2,149 @@ import Link from 'next/link'
 import { useState } from 'react'
 import type { ReactElement } from 'react'
 
+interface MenuItem {
+  label: string
+  href?: string
+  children?: MenuItem[]
+}
+
+const menuItems: MenuItem[] = [
+  { label: 'Home', href: '/' },
+  { label: 'About Us', href: '/about' },
+  {
+    label: 'Services',
+    children: [
+      { label: 'Industrial Welding', href: '/services/industrial' },
+      { label: 'Commercial Welding', href: '/services/commercial' },
+      { label: 'Residential Welding', href: '/services/residential' },
+    ],
+  },
+  { label: 'Projects', href: '/projects' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'FAQs', href: '/faqs' },
+]
+
+interface DesktopMenuProps {
+  items: MenuItem[]
+}
+
+function DesktopMenu({ items }: DesktopMenuProps): ReactElement {
+  return (
+    <nav className="hidden lg:flex items-center space-x-8 text-sm font-medium">
+      {items.map((item, index) => (
+        <div key={index} className="relative group">
+          {item.children ? (
+            <>
+              <button className="hover:text-[#ff0000] transition-colors">
+                {item.label}
+              </button>
+              <div className="absolute left-0 mt-2 w-56 bg-white text-gray-900 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                {item.children.map((child, childIndex) => (
+                  <Link
+                    key={childIndex}
+                    href={child.href!}
+                    className={`block px-4 py-3 hover:bg-gray-100 ${
+                      childIndex === 0 ? 'rounded-t-lg' : 
+                      childIndex === item.children!.length - 1 ? 'rounded-b-lg' : ''
+                    }`}
+                  >
+                    {child.label}
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Link href={item.href!} className="hover:text-[#ff0000] transition-colors">
+              {item.label}
+            </Link>
+          )}
+        </div>
+      ))}
+    </nav>
+  )
+}
+
+interface MobileMenuItemProps {
+  item: MenuItem
+  onClose: () => void
+  level?: number
+}
+
+function MobileMenuItem({ item, onClose, level = 0 }: MobileMenuItemProps): ReactElement {
+  const [isOpen, setIsOpen] = useState(false)
+
+  if (item.children) {
+    return (
+      <div>
+        <button
+          className={`w-full text-left py-2 hover:text-[#ff0000] transition-colors flex items-center justify-between ${
+            level > 0 ? 'pl-4' : ''
+          }`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {item.label}
+          <span className="text-sm">{isOpen ? '▲' : '▼'}</span>
+        </button>
+        {isOpen && (
+          <div className="space-y-2 mt-2">
+            {item.children.map((child, childIndex) => (
+              <MobileMenuItem
+                key={childIndex}
+                item={child}
+                onClose={onClose}
+                level={level + 1}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={item.href!}
+      className={`block py-2 hover:text-[#ff0000] transition-colors ${
+        level > 0 ? 'pl-4' : ''
+      }`}
+      onClick={onClose}
+    >
+      {item.label}
+    </Link>
+  )
+}
+
+interface MobileMenuProps {
+  items: MenuItem[]
+  isOpen: boolean
+  onClose: () => void
+}
+
+function MobileMenu({ items, isOpen, onClose }: MobileMenuProps): ReactElement {
+  if (!isOpen) return <></>
+
+  return (
+    <div className="lg:hidden bg-[#1a2332] border-t border-gray-700">
+      <nav className="px-6 py-4 space-y-3">
+        {items.map((item, index) => (
+          <MobileMenuItem key={index} item={item} onClose={onClose} />
+        ))}
+        <Link
+          href="/quote"
+          className="block mt-4 bg-brand-red hover:bg-[#cc0000] text-white px-6 py-3 rounded font-semibold transition-colors text-center"
+          onClick={onClose}
+        >
+          Get a Quote
+        </Link>
+      </nav>
+    </div>
+  )
+}
+
 export default function Header(): ReactElement {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [servicesOpen, setServicesOpen] = useState(false)
+
+  const closeMobileMenu = () => setMobileMenuOpen(false)
 
   return (
     <header className="bg-brand-blue text-white shadow-md">
@@ -15,21 +155,7 @@ export default function Header(): ReactElement {
           </Link>
         </div>
 
-        <nav className="hidden lg:flex items-center space-x-8 text-sm font-medium">
-          <Link href="/" className="hover:text-[#ff0000] transition-colors">Home</Link>
-          <Link href="/about" className="hover:text-[#ff0000] transition-colors">About Us</Link>
-          <div className="relative group">
-            <button className="hover:text-[#ff0000] transition-colors">Services</button>
-            <div className="absolute left-0 mt-2 w-56 bg-white text-gray-900 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-              <Link href="/services/industrial" className="block px-4 py-3 hover:bg-gray-100 rounded-t-lg">Industrial Welding</Link>
-              <Link href="/services/commercial" className="block px-4 py-3 hover:bg-gray-100">Commercial Welding</Link>
-              <Link href="/services/residential" className="block px-4 py-3 hover:bg-gray-100 rounded-b-lg">Residential Welding</Link>
-            </div>
-          </div>
-          <Link href="/projects" className="hover:text-[#ff0000] transition-colors">Projects</Link>
-          <Link href="/blog" className="hover:text-[#ff0000] transition-colors">Blog</Link>
-          <Link href="/faqs" className="hover:text-[#ff0000] transition-colors">FAQs</Link>
-        </nav>
+        <DesktopMenu items={menuItems} />
 
         <div className="flex items-center space-x-4">
           <Link
@@ -48,88 +174,11 @@ export default function Header(): ReactElement {
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#1a2332] border-t border-gray-700">
-          <nav className="px-6 py-4 space-y-3">
-            <Link
-              href="/"
-              className="block py-2 hover:text-[#ff0000] transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="/about"
-              className="block py-2 hover:text-[#ff0000] transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              About Us
-            </Link>
-            <div>
-              <button
-                className="w-full text-left py-2 hover:text-[#ff0000] transition-colors flex items-center justify-between"
-                onClick={() => setServicesOpen(!servicesOpen)}
-              >
-                Services
-                <span className="text-sm">{servicesOpen ? '▲' : '▼'}</span>
-              </button>
-              {servicesOpen && (
-                <div className="pl-4 space-y-2 mt-2">
-                  <Link
-                    href="/services/industrial"
-                    className="block py-2 hover:text-[#ff0000] transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Industrial Welding
-                  </Link>
-                  <Link
-                    href="/services/commercial"
-                    className="block py-2 hover:text-[#ff0000] transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Commercial Welding
-                  </Link>
-                  <Link
-                    href="/services/residential"
-                    className="block py-2 hover:text-[#ff0000] transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Residential Welding
-                  </Link>
-                </div>
-              )}
-            </div>
-            <Link
-              href="/projects"
-              className="block py-2 hover:text-[#ff0000] transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Projects
-            </Link>
-            <Link
-              href="/blog"
-              className="block py-2 hover:text-[#ff0000] transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Blog
-            </Link>
-            <Link
-              href="/faqs"
-              className="block py-2 hover:text-[#ff0000] transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              FAQs
-            </Link>
-            <Link
-              href="/quote"
-              className="block mt-4 bg-brand-red hover:bg-[#cc0000] text-white px-6 py-3 rounded font-semibold transition-colors text-center"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Get a Quote
-            </Link>
-          </nav>
-        </div>
-      )}
+      <MobileMenu
+        items={menuItems}
+        isOpen={mobileMenuOpen}
+        onClose={closeMobileMenu}
+      />
     </header>
   )
 }
